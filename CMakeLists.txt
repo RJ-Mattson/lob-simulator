@@ -11,6 +11,9 @@ endif()
 add_library(order_book src/order_book.cpp)
 target_include_directories(order_book PUBLIC include)
 
+add_library(historical src/lobster_reader.cpp src/replayer.cpp)
+target_link_libraries(historical PUBLIC order_book)
+
 add_executable(lob_sim src/main.cpp)
 target_link_libraries(lob_sim PRIVATE order_book)
 
@@ -18,3 +21,7 @@ enable_testing()
 add_executable(test_order_book tests/test_order_book.cpp)
 target_link_libraries(test_order_book PRIVATE order_book)
 add_test(NAME test_order_book COMMAND test_order_book)
+
+add_executable(test_replayer tests/test_replayer.cpp)
+target_link_libraries(test_replayer PRIVATE historical)
+add_test(NAME test_replayer COMMAND test_replayer)

@@ -22,25 +22,25 @@ enum class OrderType {
 };
 
 struct Order{
-    lob::OrderId id;
+    OrderId id;
     OrderSide side;
     OrderType type;
-    lob::Price price;
-    lob::Quantity qty;
-    lob::Timestamp time;
+    Price price;
+    Quantity qty;
+    Timestamp time;
 
-    Order(lob::OrderId id_, OrderSide side_, OrderType type_, lob::Price price_, lob::Quantity qty_, lob::Timestamp time_) :
+    Order(OrderId id_, OrderSide side_, OrderType type_, Price price_, Quantity qty_, Timestamp time_) :
     id(id_), side(side_), type(type_), price(price_), qty(qty_), time(time_) {}
 };
 
 struct Trade{
-    lob::OrderId buyId;
-    lob::OrderId sellId;
-    lob::Price price;
-    lob::Quantity qty;
-    lob::Timestamp time;
+    OrderId buyId;
+    OrderId sellId;
+    Price price;
+    Quantity qty;
+    Timestamp time;
 
-    Trade(lob::OrderId buyId_, lob::OrderId sellId_, lob::Price price_, lob::Quantity qty_, lob::Timestamp time_) :
+    Trade(OrderId buyId_, OrderId sellId_, Price price_, Quantity qty_, Timestamp time_) :
     buyId(buyId_), sellId(sellId_), price(price_), qty(qty_), time(time_){}
 };
 }

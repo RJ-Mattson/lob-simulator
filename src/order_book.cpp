@@ -26,10 +26,6 @@ std::vector<Trade> OrderBook::match(Order& incoming) {
     std::vector<Trade> trades;
     const bool incoming_is_buy = (incoming.side == OrderSide::Buy);
 
-    // Walks the opposite side's price levels (best price first, since both
-    // bids_ and asks_ iterate best-to-worst under their respective
-    // comparators) draining resting orders FIFO until the incoming order is
-    // filled or no more levels cross.
     auto walk = [&](auto& opposite_book) {
         while (incoming.qty > 0 && !opposite_book.empty()) {
             auto level_it = opposite_book.begin();
@@ -182,8 +178,6 @@ bool OrderBook::modify_order(OrderId id, Quantity new_qty) {
             }
 
             if (new_qty > it->qty) {
-                // Increasing quantity loses time priority: remove and
-                // re-insert at the back of the level.
                 Order updated = *it;
                 updated.qty = new_qty;
                 level.total_qty -= it->qty;
@@ -243,4 +237,4 @@ Quantity OrderBook::depth_at(OrderSide side, Price price) const {
     return it == asks_.end() ? 0 : it->second.total_qty;
 }
 
-}  // namespace lob
+}

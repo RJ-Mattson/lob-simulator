@@ -1,5 +1,6 @@
 #include "replayer.hpp"
 
+#include <iterator>
 #include <stdexcept>
 
 namespace lob {
@@ -29,7 +30,8 @@ void Replayer::apply(const LobsterEvent& event, std::vector<Trade>& trades_out) 
             OrderSide side = (event.direction == 1) ? OrderSide::Buy : OrderSide::Sell;
             Order order(event.order_id, side, OrderType::Limit, event.price, event.size, book_.next_timestamp());
             auto trades = book_.add_order(order);
-            trades_out.insert(trades_out.end(), trades.begin(), trades.end());
+            trades_out.insert(trades_out.end(), std::make_move_iterator(trades.begin()),
+                               std::make_move_iterator(trades.end()));
             resting_qty_[event.order_id] = event.size;
             break;
         }
@@ -51,14 +53,14 @@ void Replayer::apply(const LobsterEvent& event, std::vector<Trade>& trades_out) 
             resting_qty_.erase(event.order_id);
             break;
         }
-        case LobsterMsgType::ExecutionVisible:
-        case LobsterMsgType::ExecutionHidden: {
+        case LobsterMsgType::ExecutionVisible: {
             OrderSide resting_side = (event.direction == 1) ? OrderSide::Buy : OrderSide::Sell;
             OrderSide aggressor_side = (resting_side == OrderSide::Buy) ? OrderSide::Sell : OrderSide::Buy;
             Order aggressor(next_synthetic_id_--, aggressor_side, OrderType::IOC, event.price, event.size,
                              book_.next_timestamp());
             auto trades = book_.add_order(aggressor);
-            trades_out.insert(trades_out.end(), trades.begin(), trades.end());
+            trades_out.insert(trades_out.end(), std::make_move_iterator(trades.begin()),
+                               std::make_move_iterator(trades.end()));
 
             auto it = resting_qty_.find(event.order_id);
             if (it != resting_qty_.end()) {
@@ -69,11 +71,11 @@ void Replayer::apply(const LobsterEvent& event, std::vector<Trade>& trades_out) 
             }
             break;
         }
+        case LobsterMsgType::ExecutionHidden:
         case LobsterMsgType::Cross:
         case LobsterMsgType::Halt:
-            // Not modeled in this version.
             break;
     }
 }
 
-}  // namespace lob
+}

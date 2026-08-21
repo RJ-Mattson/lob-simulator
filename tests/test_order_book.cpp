@@ -190,7 +190,7 @@ void test_zero_and_negative_qty_are_noop() {
     check(book.best_bid() == std::nullopt, "negative-qty order should not rest");
 }
 
-}  // namespace
+}
 
 int main() {
     test_resting_limit_orders_no_cross();

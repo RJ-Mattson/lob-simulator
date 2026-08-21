@@ -53,12 +53,12 @@ void test_lobster_reader_rejects_malformed_row() {
 
 void test_replayer_full_lifecycle() {
     std::istringstream in(
-        "1.0,1,100,10,100,1\n"    // submit buy id100 qty10 @100
-        "2.0,1,101,5,102,-1\n"    // submit sell id101 qty5 @102
-        "3.0,2,100,4,100,1\n"     // partial cancel: id100 10 -> 6
-        "4.0,4,101,5,102,-1\n"    // execution: consumes all of id101
-        "5.0,5,999,2,102,-1\n"    // hidden execution, unknown id -> no trade
-        "6.0,3,100,6,100,1\n");   // full deletion of id100
+        "1.0,1,100,10,100,1\n"
+        "2.0,1,101,5,102,-1\n"
+        "3.0,2,100,4,100,1\n"
+        "4.0,4,101,5,102,-1\n"
+        "5.0,5,999,2,102,-1\n"
+        "6.0,3,100,6,100,1\n");
     lob::Replayer replayer(in);
 
     std::vector<lob::Trade> trades;
@@ -92,12 +92,30 @@ void test_replayer_full_lifecycle() {
     check(replayer.book().best_ask() == std::nullopt, "book should have no asks left");
 }
 
-}  // namespace
+void test_replayer_hidden_execution_does_not_consume_visible_liquidity() {
+    std::istringstream in(
+        "1.0,1,300,10,100,-1\n"
+        "2.0,5,999,3,100,-1\n");
+    lob::Replayer replayer(in);
+
+    std::vector<lob::Trade> trades;
+    replayer.step(trades);
+    check(replayer.book().depth_at(lob::OrderSide::Sell, 100) == 10, "id300 should rest with qty10");
+
+    trades.clear();
+    replayer.step(trades);
+    check(trades.empty(), "hidden execution should not synthesize a trade against visible liquidity");
+    check(replayer.book().depth_at(lob::OrderSide::Sell, 100) == 10,
+          "hidden execution must not consume the real resting order at the same price");
+}
+
+}
 
 int main() {
     test_lobster_reader_parses_rows();
     test_lobster_reader_rejects_malformed_row();
     test_replayer_full_lifecycle();
+    test_replayer_hidden_execution_does_not_consume_visible_liquidity();
 
     if (failures > 0) {
         std::cerr << failures << " test(s) failed\n";

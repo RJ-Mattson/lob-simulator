@@ -20,6 +20,9 @@ target_link_libraries(lob_sim PRIVATE order_book)
 add_executable(lob_replay src/replay_cli.cpp)
 target_link_libraries(lob_replay PRIVATE historical)
 
+add_executable(lob_validate src/validate_replay.cpp)
+target_link_libraries(lob_validate PRIVATE historical)
+
 enable_testing()
 add_executable(test_order_book tests/test_order_book.cpp)
 target_link_libraries(test_order_book PRIVATE order_book)

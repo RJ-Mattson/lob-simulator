@@ -22,6 +22,17 @@ std::vector<Trade> OrderBook::add_order(Order order) {
     return trades;
 }
 
+void OrderBook::seed_resting_order(Order order) {
+    if (order.qty <= 0) {
+        return;
+    }
+    if (order.side == OrderSide::Buy) {
+        insert_resting_bid(order);
+    } else {
+        insert_resting_ask(order);
+    }
+}
+
 std::vector<Trade> OrderBook::match(Order& incoming) {
     std::vector<Trade> trades;
     const bool incoming_is_buy = (incoming.side == OrderSide::Buy);
@@ -235,6 +246,24 @@ Quantity OrderBook::depth_at(OrderSide side, Price price) const {
     }
     auto it = asks_.find(price);
     return it == asks_.end() ? 0 : it->second.total_qty;
+}
+
+std::vector<std::pair<Price, Quantity>> OrderBook::top_levels(OrderSide side, std::size_t n) const {
+    std::vector<std::pair<Price, Quantity>> levels;
+
+    auto collect = [&](const auto& book) {
+        for (auto it = book.begin(); it != book.end() && levels.size() < n; ++it) {
+            levels.emplace_back(it->first, it->second.total_qty);
+        }
+    };
+
+    if (side == OrderSide::Buy) {
+        collect(bids_);
+    } else {
+        collect(asks_);
+    }
+
+    return levels;
 }
 
 }

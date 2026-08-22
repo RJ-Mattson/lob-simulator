@@ -27,6 +27,8 @@ namespace lob {
         
         std::vector<Trade> add_order(Order order);
 
+        void seed_resting_order(Order order);
+
         bool cancel_order(OrderId id);
 
         bool modify_order(OrderId id, Quantity new_qty);
@@ -36,6 +38,8 @@ namespace lob {
         std::optional<Price> spread() const;
 
         Quantity depth_at(OrderSide side, Price price) const;
+
+        std::vector<std::pair<Price, Quantity>> top_levels(OrderSide side, std::size_t n) const;
 
 
         Timestamp next_timestamp() {

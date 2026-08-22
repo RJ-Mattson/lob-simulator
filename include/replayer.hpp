@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace lob {
@@ -16,6 +17,9 @@ public:
     explicit Replayer(std::istream& message_stream);
 
     bool step(std::vector<Trade>& trades_out);
+
+    void bootstrap(const std::vector<std::pair<Price, Quantity>>& bid_levels,
+                    const std::vector<std::pair<Price, Quantity>>& ask_levels);
 
     OrderBook& book() { return book_; }
     const OrderBook& book() const { return book_; }

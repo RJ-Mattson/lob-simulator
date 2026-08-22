@@ -14,6 +14,18 @@ Replayer::Replayer(const std::string& message_file_path)
 
 Replayer::Replayer(std::istream& message_stream) : reader_(message_stream) {}
 
+void Replayer::bootstrap(const std::vector<std::pair<Price, Quantity>>& bid_levels,
+                          const std::vector<std::pair<Price, Quantity>>& ask_levels) {
+    for (const auto& [price, qty] : bid_levels) {
+        Order order(next_synthetic_id_--, OrderSide::Buy, OrderType::Limit, price, qty, book_.next_timestamp());
+        book_.seed_resting_order(order);
+    }
+    for (const auto& [price, qty] : ask_levels) {
+        Order order(next_synthetic_id_--, OrderSide::Sell, OrderType::Limit, price, qty, book_.next_timestamp());
+        book_.seed_resting_order(order);
+    }
+}
+
 bool Replayer::step(std::vector<Trade>& trades_out) {
     LobsterEvent event;
     if (!reader_.next(event)) {

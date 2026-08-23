@@ -33,9 +33,29 @@ No external dependencies, just CMake and a C++17 compiler.
 - `lob_replay` runs a message file through the engine standalone and
   reports trade count, volume, VWAP, and final book state
 
+**Synthetic order-flow simulator** (`include/simulator.hpp`, `src/simulator.cpp`,
+`src/simulate_cli.cpp`)
+- Generates random limit orders, market orders, and cancels against the
+  matching engine using a zero-intelligence-style model: order arrival
+  type is drawn from configurable relative rates, side is a coin flip,
+  quantity is uniform, and limit price is offset from the opposite
+  side's best quote by a geometric-distributed number of ticks (so most
+  orders land near the touch, occasionally crossing and trading)
+- Seeds an initial two-sided book before generating flow, so there's
+  always something to trade against
+- Cancels are sampled from actually-live resting order ids, tracked as
+  orders rest and get consumed by later matches
+- Fully deterministic given a seed (`std::mt19937_64`), for reproducible
+  runs
+- `lob_simulate` runs a configurable number of events and prints summary
+  stats (event counts, trade count/volume/VWAP, final book state), with
+  optional CSV output of the best-bid/best-ask time series and the trade
+  tape
+
 **Tests** (`tests/`), a self-contained `assert`-based suite with no gtest
 dependency, covering matching, price-time priority, cancel/modify
-semantics, and the LOBSTER replay path, run via CTest.
+semantics, the LOBSTER replay path, and simulator determinism/invariants,
+run via CTest.
 
 ### Validated against real market data
 
@@ -75,6 +95,12 @@ Sample data isn't redistributed in this repo, download the matching message/orde
 ./build/lob_validate \
   data/AAPL_2012-06-21_34200000_57600000_message_10.csv \
   data/AAPL_2012-06-21_34200000_57600000_orderbook_10.csv
+
+# generate 20,000 synthetic events (seed 42) and print summary stats
+./build/lob_simulate 20000 42
+
+# same, plus CSV dumps of the best-bid/ask series and the trade tape
+./build/lob_simulate 20000 42 --snapshots-csv snapshots.csv --trades-csv trades.csv
 ```
 
 ## What's not built yet

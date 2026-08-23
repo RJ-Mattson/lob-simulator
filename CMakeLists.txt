@@ -29,6 +29,9 @@ target_link_libraries(lob_validate PRIVATE historical)
 add_executable(lob_simulate src/simulate_cli.cpp)
 target_link_libraries(lob_simulate PRIVATE simulator)
 
+add_executable(lob_experiment src/experiment_cli.cpp)
+target_link_libraries(lob_experiment PRIVATE simulator)
+
 enable_testing()
 add_executable(test_order_book tests/test_order_book.cpp)
 target_link_libraries(test_order_book PRIVATE order_book)

@@ -52,6 +52,19 @@ No external dependencies, just CMake and a C++17 compiler.
   optional CSV output of the best-bid/best-ask time series and the trade
   tape
 
+**Experiment harness** (`include/sweep.hpp`, `src/sweep.cpp`, `src/experiment_cli.cpp`)
+- Builds a full-factorial grid of `SimulatorConfig`s from a base config plus
+  a set of swept fields (`SweepAxis`, applied via pointer-to-member, so any
+  numeric config field can be varied without per-field boilerplate)
+- Runs the simulator once per `(config, seed)` combination and writes one
+  row per run to CSV (config params + trade count/volume/VWAP/final book
+  state), for downstream aggregation/analysis in pandas or a spreadsheet
+- The sweep axes and seed list are defined directly in `experiment_cli.cpp`'s
+  `main()` rather than an external config format, in keeping with this
+  project's no-dependencies constraint — edit and rebuild to change the
+  experiment
+- `lob_experiment` is the CLI driver: `lob_experiment [num_events] [--out path]`
+
 **Tests** (`tests/`), a self-contained `assert`-based suite with no gtest
 dependency, covering matching, price-time priority, cancel/modify
 semantics, the LOBSTER replay path, and simulator determinism/invariants,
@@ -101,6 +114,10 @@ Sample data isn't redistributed in this repo, download the matching message/orde
 
 # same, plus CSV dumps of the best-bid/ask series and the trade tape
 ./build/lob_simulate 20000 42 --snapshots-csv snapshots.csv --trades-csv trades.csv
+
+# run the config grid defined in experiment_cli.cpp (2,000 events per run)
+# and write one row per (config, seed) run to results.csv
+./build/lob_experiment 2000 --out results.csv
 ```
 
 ## What's not built yet

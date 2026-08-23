@@ -65,23 +65,18 @@ int main(int argc, char** argv) {
     std::cout << "trades: " << stats.num_trades << "\n";
     std::cout << "total traded qty: " << stats.total_traded_qty << "\n";
 
-    if (stats.total_traded_qty > 0) {
-        double notional = 0.0;
-        for (const auto& t : stats.trades) {
-            notional += static_cast<double>(t.price) * static_cast<double>(t.qty);
-        }
-        std::cout << "vwap: " << (notional / static_cast<double>(stats.total_traded_qty)) << "\n";
+    lob::SummaryMetrics metrics = lob::summarize(stats, sim.book());
+    if (metrics.total_traded_qty > 0) {
+        std::cout << "vwap: " << metrics.vwap << "\n";
     }
-
-    const auto& book = sim.book();
-    if (auto bid = book.best_bid()) {
-        std::cout << "final best bid: " << *bid << "\n";
+    if (metrics.final_best_bid) {
+        std::cout << "final best bid: " << *metrics.final_best_bid << "\n";
     }
-    if (auto ask = book.best_ask()) {
-        std::cout << "final best ask: " << *ask << "\n";
+    if (metrics.final_best_ask) {
+        std::cout << "final best ask: " << *metrics.final_best_ask << "\n";
     }
-    if (auto spread = book.spread()) {
-        std::cout << "final spread: " << *spread << "\n";
+    if (metrics.final_spread) {
+        std::cout << "final spread: " << *metrics.final_spread << "\n";
     }
 
     if (!snapshots_csv_path.empty()) {

@@ -144,4 +144,24 @@ void Simulator::track_order(OrderId id) {
     live_order_ids_.push_back(id);
 }
 
+SummaryMetrics summarize(const SimulationStats& stats, const OrderBook& book) {
+    SummaryMetrics metrics;
+    metrics.num_trades = stats.num_trades;
+    metrics.total_traded_qty = stats.total_traded_qty;
+
+    if (metrics.total_traded_qty > 0) {
+        double notional = 0.0;
+        for (const auto& t : stats.trades) {
+            notional += static_cast<double>(t.price) * static_cast<double>(t.qty);
+        }
+        metrics.vwap = notional / static_cast<double>(metrics.total_traded_qty);
+    }
+
+    metrics.final_best_bid = book.best_bid();
+    metrics.final_best_ask = book.best_ask();
+    metrics.final_spread = book.spread();
+
+    return metrics;
+}
+
 }

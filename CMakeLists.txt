@@ -14,7 +14,7 @@ target_include_directories(order_book PUBLIC include)
 add_library(historical src/lobster_reader.cpp src/replayer.cpp)
 target_link_libraries(historical PUBLIC order_book)
 
-add_library(simulator src/simulator.cpp)
+add_library(simulator src/simulator.cpp src/sweep.cpp)
 target_link_libraries(simulator PUBLIC order_book)
 
 add_executable(lob_sim src/main.cpp)

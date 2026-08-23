@@ -50,6 +50,17 @@ struct SimulationStats {
     std::vector<BookSnapshot> snapshots;
 };
 
+struct SummaryMetrics {
+    std::size_t num_trades = 0;
+    Quantity total_traded_qty = 0;
+    double vwap = 0.0;
+    std::optional<Price> final_best_bid;
+    std::optional<Price> final_best_ask;
+    std::optional<Price> final_spread;
+};
+
+SummaryMetrics summarize(const SimulationStats& stats, const OrderBook& book);
+
 class Simulator {
 public:
     explicit Simulator(SimulatorConfig config);

@@ -1,8 +1,11 @@
 #include "simulator.hpp"
+#include "sweep.hpp"
 
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 #include <optional>
+#include <vector>
 
 namespace {
 
@@ -117,6 +120,46 @@ void test_snapshot_interval_controls_snapshot_count() {
     check(sim.stats().snapshots.size() == 10, "snapshots should be taken every 10th event");
 }
 
+void test_summarize_computes_vwap_and_book_state() {
+    lob::SimulatorConfig config;
+    config.seed = 3;
+    lob::Simulator sim(config);
+    sim.run(500);
+
+    auto metrics = lob::summarize(sim.stats(), sim.book());
+    check(metrics.num_trades == sim.stats().num_trades,
+          "summarize should report the same trade count as stats");
+    check(metrics.total_traded_qty == sim.stats().total_traded_qty,
+          "summarize should report the same traded qty as stats");
+    check(metrics.final_best_bid == sim.book().best_bid(),
+          "summarize should report the book's current best bid");
+    check(metrics.final_best_ask == sim.book().best_ask(),
+          "summarize should report the book's current best ask");
+
+    if (metrics.total_traded_qty > 0) {
+        check(metrics.vwap > 0.0, "vwap should be positive when trades occurred");
+    }
+}
+
+void test_expand_grid_produces_cross_product() {
+    lob::SimulatorConfig base;
+    std::vector<lob::SweepAxis> axes = {
+        lob::make_axis<double>("cancel_weight", &lob::SimulatorConfig::cancel_weight, {0.2, 0.4, 0.6}),
+        lob::make_axis<std::uint64_t>("seed", &lob::SimulatorConfig::seed, {1, 2}),
+    };
+
+    auto configs = lob::expand_grid(base, axes);
+    check(configs.size() == 6, "expand_grid should produce the full cross product (3 x 2 = 6)");
+
+    bool found = false;
+    for (const auto& c : configs) {
+        if (c.cancel_weight == 0.4 && c.seed == 2) {
+            found = true;
+        }
+    }
+    check(found, "expand_grid should include every combination of axis values");
+}
+
 }
 
 int main() {
@@ -126,6 +169,8 @@ int main() {
     test_different_seeds_diverge();
     test_cancel_only_removes_live_orders();
     test_snapshot_interval_controls_snapshot_count();
+    test_summarize_computes_vwap_and_book_state();
+    test_expand_grid_produces_cross_product();
 
     if (failures == 0) {
         std::cout << "All tests passed.\n";

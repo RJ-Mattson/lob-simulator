@@ -54,6 +54,14 @@ std::vector<Trade> OrderBook::match(Order& incoming) {
 
             while (incoming.qty > 0 && !level.orders.empty()) {
                 Order& resting = level.orders.front();
+
+                if (resting.owner == incoming.owner) {
+                    level.total_qty -= resting.qty;
+                    locations_.erase(resting.id);
+                    level.orders.pop_front();
+                    continue;
+                }
+
                 Quantity traded_qty = std::min(incoming.qty, resting.qty);
 
                 OrderId buy_id = incoming_is_buy ? incoming.id : resting.id;

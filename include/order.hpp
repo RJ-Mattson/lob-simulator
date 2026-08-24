@@ -5,6 +5,7 @@
 
 namespace lob {
     using OrderId = std::int64_t;
+    using OwnerId = std::int64_t;
     using Price = std::int64_t;
     using Quantity = std::int64_t;
     using Timestamp = std::int64_t;
@@ -28,9 +29,13 @@ struct Order{
     Price price;
     Quantity qty;
     Timestamp time;
+    OwnerId owner;
 
     Order(OrderId id_, OrderSide side_, OrderType type_, Price price_, Quantity qty_, Timestamp time_) :
-    id(id_), side(side_), type(type_), price(price_), qty(qty_), time(time_) {}
+    Order(id_, side_, type_, price_, qty_, time_, id_) {}
+
+    Order(OrderId id_, OrderSide side_, OrderType type_, Price price_, Quantity qty_, Timestamp time_, OwnerId owner_) :
+    id(id_), side(side_), type(type_), price(price_), qty(qty_), time(time_), owner(owner_) {}
 };
 
 struct Trade{

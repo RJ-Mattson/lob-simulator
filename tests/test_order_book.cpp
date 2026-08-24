@@ -178,6 +178,40 @@ void test_market_order_exhausts_multiple_levels() {
     check(book.best_bid() == std::nullopt, "unfilled remainder of the market order should not rest");
 }
 
+void test_self_trade_prevention_cancels_resting_order() {
+    lob::OrderBook book;
+    book.add_order(lob::Order(1, lob::OrderSide::Sell, lob::OrderType::Limit, 100, 5, book.next_timestamp(), 42));
+
+    auto trades = book.add_order(lob::Order(2, lob::OrderSide::Buy, lob::OrderType::Limit, 100, 5, book.next_timestamp(), 42));
+
+    check(trades.empty(), "same-owner orders should not trade against each other");
+    check(!book.cancel_order(1), "self-traded resting order should already be gone from the book");
+    check(book.best_bid() == 100, "incoming order should rest instead of matching itself");
+}
+
+void test_self_trade_prevention_falls_through_to_other_owners() {
+    lob::OrderBook book;
+    book.add_order(lob::Order(1, lob::OrderSide::Sell, lob::OrderType::Limit, 100, 5, book.next_timestamp(), 42));
+    book.add_order(lob::Order(2, lob::OrderSide::Sell, lob::OrderType::Limit, 100, 5, book.next_timestamp(), 99));
+
+    auto trades = book.add_order(lob::Order(3, lob::OrderSide::Buy, lob::OrderType::Limit, 100, 5, book.next_timestamp(), 42));
+
+    check(trades.size() == 1, "incoming order should skip its own resting order and trade against a different owner");
+    if (!trades.empty()) {
+        check(trades[0].sellId == 2, "the surviving resting order should belong to a different owner");
+    }
+    check(!book.cancel_order(1), "same-owner resting order should have been cancelled, not filled");
+}
+
+void test_owner_defaults_to_order_id() {
+    lob::OrderBook book;
+    book.add_order(lob::Order(1, lob::OrderSide::Sell, lob::OrderType::Limit, 100, 5, book.next_timestamp()));
+
+    auto trades = book.add_order(lob::Order(2, lob::OrderSide::Buy, lob::OrderType::Limit, 100, 5, book.next_timestamp()));
+
+    check(trades.size() == 1, "orders constructed without an explicit owner should still trade normally");
+}
+
 void test_zero_and_negative_qty_are_noop() {
     lob::OrderBook book;
 
@@ -207,6 +241,9 @@ int main() {
     test_fifo_preserved_after_cancel();
     test_modify_increase_loses_time_priority();
     test_market_order_exhausts_multiple_levels();
+    test_self_trade_prevention_cancels_resting_order();
+    test_self_trade_prevention_falls_through_to_other_owners();
+    test_owner_defaults_to_order_id();
     test_zero_and_negative_qty_are_noop();
 
     if (failures == 0) {

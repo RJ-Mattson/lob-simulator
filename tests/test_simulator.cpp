@@ -120,6 +120,53 @@ void test_snapshot_interval_controls_snapshot_count() {
     check(sim.stats().snapshots.size() == 10, "snapshots should be taken every 10th event");
 }
 
+void test_regime_change_switches_config_mid_run() {
+    lob::SimulatorConfig config;
+    config.seed = 11;
+    config.limit_order_weight = 1.0;
+    config.market_order_weight = 0.0;
+    config.cancel_weight = 0.0;
+
+    lob::SimulatorConfig shocked = config;
+    shocked.limit_order_weight = 0.0;
+    shocked.market_order_weight = 0.0;
+    shocked.cancel_weight = 1.0;
+
+    lob::Simulator sim(config);
+    sim.schedule_regime_change(20, shocked);
+
+    sim.run(20);
+    check(sim.stats().num_cancel_attempts == 0,
+          "no cancel attempts should occur before the scheduled regime change");
+
+    sim.run(20);
+    check(sim.stats().num_cancel_attempts > 0,
+          "cancel attempts should occur once the regime change activates");
+}
+
+void test_regime_change_preserves_determinism() {
+    lob::SimulatorConfig config;
+    config.seed = 77;
+
+    lob::SimulatorConfig shocked = config;
+    shocked.limit_order_weight = 0.0;
+    shocked.market_order_weight = 0.0;
+    shocked.cancel_weight = 1.0;
+
+    lob::Simulator sim_a(config);
+    sim_a.schedule_regime_change(50, shocked);
+    sim_a.run(200);
+
+    lob::Simulator sim_b(config);
+    sim_b.schedule_regime_change(50, shocked);
+    sim_b.run(200);
+
+    check(sim_a.stats().num_trades == sim_b.stats().num_trades,
+          "same seed and regime schedule should produce the same trade count");
+    check(sim_a.book().best_bid() == sim_b.book().best_bid(),
+          "same seed and regime schedule should produce the same final best bid");
+}
+
 void test_summarize_computes_vwap_and_book_state() {
     lob::SimulatorConfig config;
     config.seed = 3;
@@ -169,6 +216,8 @@ int main() {
     test_different_seeds_diverge();
     test_cancel_only_removes_live_orders();
     test_snapshot_interval_controls_snapshot_count();
+    test_regime_change_switches_config_mid_run();
+    test_regime_change_preserves_determinism();
     test_summarize_computes_vwap_and_book_state();
     test_expand_grid_produces_cross_product();
 

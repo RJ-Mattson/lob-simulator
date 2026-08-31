@@ -1,15 +1,31 @@
 #include "simulator.hpp"
 
+#include <algorithm>
+
 namespace lob {
 
 Simulator::Simulator(SimulatorConfig config)
     : config_(config),
       rng_(config.seed),
-      event_dist_({config.limit_order_weight, config.market_order_weight, config.cancel_weight}),
-      side_dist_(0.5),
-      qty_dist_(config.min_order_qty, config.max_order_qty),
-      offset_dist_(config.offset_decay) {
+      side_dist_(0.5) {
+    apply_regime(config_);
     seed_initial_book();
+}
+
+void Simulator::apply_regime(const SimulatorConfig& config) {
+    config_ = config;
+    event_dist_ = std::discrete_distribution<int>(
+        {config_.limit_order_weight, config_.market_order_weight, config_.cancel_weight});
+    qty_dist_ = std::uniform_int_distribution<Quantity>(config_.min_order_qty, config_.max_order_qty);
+    offset_dist_ = std::geometric_distribution<int>(config_.offset_decay);
+}
+
+void Simulator::schedule_regime_change(std::size_t at_event, SimulatorConfig config) {
+    RegimeChange change{at_event, std::move(config)};
+    auto it = std::upper_bound(
+        regime_changes_.begin(), regime_changes_.end(), change,
+        [](const RegimeChange& a, const RegimeChange& b) { return a.at_event < b.at_event; });
+    regime_changes_.insert(it, std::move(change));
 }
 
 void Simulator::seed_initial_book() {
@@ -28,6 +44,12 @@ void Simulator::seed_initial_book() {
 
 void Simulator::run(std::size_t num_events) {
     for (std::size_t i = 0; i < num_events; ++i) {
+        while (next_regime_index_ < regime_changes_.size() &&
+               regime_changes_[next_regime_index_].at_event <= static_cast<std::size_t>(event_index_)) {
+            apply_regime(regime_changes_[next_regime_index_].config);
+            ++next_regime_index_;
+        }
+
         switch (sample_event_kind()) {
             case EventKind::LimitOrder:
                 generate_limit_order();

@@ -32,6 +32,11 @@ struct SimulatorConfig {
     std::uint64_t seed = 42;
 };
 
+struct RegimeChange {
+    std::size_t at_event;
+    SimulatorConfig config;
+};
+
 struct BookSnapshot {
     Timestamp event_index;
     std::optional<Price> best_bid;
@@ -67,6 +72,8 @@ public:
 
     void run(std::size_t num_events);
 
+    void schedule_regime_change(std::size_t at_event, SimulatorConfig config);
+
     OrderBook& book() { return book_; }
     const OrderBook& book() const { return book_; }
     const SimulationStats& stats() const { return stats_; }
@@ -90,7 +97,11 @@ private:
     OrderId next_synthetic_id_ = -1;
     Timestamp event_index_ = 0;
 
+    std::vector<RegimeChange> regime_changes_;
+    std::size_t next_regime_index_ = 0;
+
     void seed_initial_book();
+    void apply_regime(const SimulatorConfig& config);
 
     EventKind sample_event_kind();
     OrderSide sample_side();
